@@ -1,0 +1,63 @@
+const { validationResult } = require("express-validator");
+const { User } = require("../models");
+const bcrypt = require("bcrypt");
+const csrfService = require('../services/csrfService'); // Import CSRF service
+
+module.exports = {
+  getLoginView: async (req, res) => {
+    try {
+      res.render("login", {
+        title: 'Login',
+        errorMessages: "",
+        userData: req.body,
+      });
+    } catch (error) {
+      res.status(500).send("Server error");
+    }
+  },
+
+  userLogin: async (req, res) => {
+      try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          return res.render("login", {
+            title: "Login",
+            errorMessages: errors.array().map((error) => error.msg),
+            userData: req.body,
+          });
+        }
+
+        // Validate CSRF Token
+        csrfService.verifyToken(req);
+
+        const { email, password } = req.body;
+        
+        const userInfo = await User.findOne({ where: { email } });
+        if (!userInfo) {
+          req.flash("error", "Invalid email or password");
+          return res.redirect("/user/login");
+        }
+
+        const isMatch = await bcrypt.compare(password, userInfo.password);
+        if (!isMatch) {
+          req.flash("error", "Invalid email or password");
+          return res.redirect("/user/login");
+        }
+
+        req.session.user = {
+          id: userInfo.id,
+          name: `${userInfo.first_name} ${userInfo.last_name}`,
+          email: userInfo.email
+        };
+        // console.log("User stored in session:", req.session.user); // Debug log
+
+        req.flash("success", "Login successfully!");
+
+        return res.redirect("/dashboard");
+      } catch (error) {
+        console.error(error);
+        req.flash("error", "Failed to login. Please try again.");
+        return res.redirect("/user/login");
+      }
+  }
+};
