@@ -6,39 +6,48 @@ const session = require("express-session");
 const flash = require("connect-flash");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
+const mysql = require("mysql2"); // Use mysql2
 const MySQLStore = require("express-mysql-session")(session);
+const dbConnection = require("./config/db");
+
 const csrfService = require("./services/csrfService");
 const indexRouter = require("./routes/index");
 const { isAuthenticated } = require("./middlewares/checkAuthLogin");
 
 require("dotenv").config(); // Load environment variables
+const app = express()
+
+// ✅ Use MySQL connection for session store
+const sessionStore = new MySQLStore({}, dbConnection);
+
+app.use(
+    session({
+        name: "user_sid",
+        secret: process.env.SESSION_SECRET || "your-secret-key", 
+        store: sessionStore,
+        resave: false,
+        saveUninitialized: true,
+        cookie: {
+            secure: process.env.NODE_ENV === "production",
+            httpOnly: true,
+            maxAge: 86400000, // 1 Day
+        },
+    })
+);
+
 
 // Load configuration
-const config = require("./config/config.json");
-const environment = process.env.NODE_ENV || "development";
-const configForEnv = config[environment];
+// const config = require("./config/config.json");
+// const environment = process.env.NODE_ENV || "development";
+// const configForEnv = config[environment];
 
-if (!configForEnv) {
-    console.error(`Configuration for environment "${environment}" is missing!`);
-    process.exit(1);
-}
-
-// Destructure necessary configurations
-const { username, password, database, host, session: sessionConfig } = configForEnv;
-
-// MySQL Session Store Configuration
-const sessionStore = new MySQLStore({
-    host,
-    user: username,
-    password,
-    database,
-    clearExpired: true,
-    checkExpirationInterval: 900000, // Check expired sessions every 15 minutes
-    expiration: sessionConfig.cookie_max_age, // 1 day session expiration
-});
+// if (!configForEnv) {
+//     console.error(`Configuration for environment "${environment}" is missing!`);
+//     process.exit(1);
+// }
 
 // Initialize express app
-const app = express();
+
 const server = http.createServer(app);
 
 // Middleware Setup
@@ -49,24 +58,15 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// 🛠️ **Session Middleware (Updated)**
-app.use(
-    session({
-        name: "user_sid",
-        secret: process.env.SESSION_SECRET || sessionConfig.secret, // Encryption key for cookies
-        store: sessionStore, // Store sessions in MySQL
-        resave: false, // Prevent unnecessary session saving
-        saveUninitialized: false, // Important for flash messages to work
-        cookie: {
-            secure: process.env.NODE_ENV === "production", // Secure only in production
-            httpOnly: true, // Prevents JS from accessing cookies
-            maxAge: sessionConfig.cookie_max_age, // Cookie expiration
-        },
-    })
-);
 
 // 🛠️ **Flash Messages Middleware (Placed Immediately After Session)**
 app.use(flash());
+
+app.use((req, res, next) => {
+    res.locals.success = req.flash("success");
+    res.locals.error = req.flash("error");
+    next();
+});
 
 // 🔍 **Flash Debugging Middleware (Check If Flash Works)**
 // app.use((req, res, next) => {
@@ -84,11 +84,6 @@ app.use((req, res, next) => {
 });
 
 // 🛠️ **Flash Messages Available in Views**
-app.use((req, res, next) => {
-    res.locals.success = req.flash("success");
-    res.locals.error = req.flash("error");
-    next();
-});
 
 // 🛠️ **CSRF Token Middleware**
 app.use((req, res, next) => {
