@@ -33,6 +33,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.NUMBER,
         allowNull: true,
       },
+      deleted_at: {
+        type: DataTypes.DATE, // Add column for soft delete
+        allowNull: true,
+      },
       status: {
         type: DataTypes.BOOLEAN,
         defaultValue: true, // True = Active, False = Inactive
@@ -61,7 +65,7 @@ module.exports = (sequelize, DataTypes) => {
   Product.associate = (models) => {
     // EmployeeLeave belongs to a User
     Product.belongsTo(models.User, {
-      foreignKey: 'user_id',
+      foreignKey: 'created_by',
       as: 'user',
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE',

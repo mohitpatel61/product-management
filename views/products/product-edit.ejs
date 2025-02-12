@@ -1,0 +1,165 @@
+<%- contentFor('body') %>
+    <div class="container-fluid px-4">
+        <h1 class="mt-4">Update product</h1>
+        <ol class="breadcrumb mb-4">
+            <li class="breadcrumb-item active">Update product</li>
+        </ol>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-table me-1"></i>
+                Update product
+            </div>
+            <div class="card-body">
+                <div id="layoutAuthentication">
+                    <div id="layoutAuthentication_content">
+                        <main>
+                            <div class="container">
+                                <div class="row justify-content-center">
+                                    <!-- Profile Picture Section -->
+                                    <div class="col-md-4 text-center">
+                                        <div class="mb-4 position-relative">
+                                            <!-- Display the current profile image or the default image -->
+                                            <img id="fileData"
+                                                src="<%= productData && productData.thumbnail_image ? productData.thumbnail_image : '/assets/img/no-image.png' %>"
+                                                alt="Profile Picture" class="img-thumbnail rounded-circle"
+                                                style="width: 150px; height: 150px; object-fit: cover;">
+
+                                            <!-- Pencil icon for editing profile picture, positioned over the image -->
+                                            <label for="productImage" class="position-absolute"
+                                                style="bottom: -15px; right: 190px; cursor: pointer; z-index: 999;">
+                                                <i class="fa fa-pencil"
+                                                    style="font-size: 24px; color: #fff; background-color: rgba(0, 0, 0, 0.6); border-radius: 50%; padding: 5px;"></i>
+                                            </label>
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="file" class="form-control" id="productImage"
+                                                name="productImage" accept="image/*" style="display: none;">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="card shadow-lg border-0 rounded-lg mt-5">
+                                            <div class="card-header">
+                                                <h3 class="text-center font-weight-light my-4">Update product</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <% if (success || error || (errors && errors.length> 0)) {
+                                                    %>
+                                                    <div>
+                                                        <% if (success) { %>
+                                                            <div
+                                                                class="alert alert-success <% if (success.length == 0) { %> d-none <% } %>">
+                                                                <%= success %>
+                                                            </div>
+
+                                                            <% } %>
+
+                                                    </div>
+                                                    <div>
+                                                        <% if (error) { %>
+                                                            <div
+                                                                class="alert alert-danger <% if (error.length == 0) { %> d-none <% } %>">
+                                                                <%= error %>
+                                                            </div>
+                                                            <% } %>
+                                                    </div>
+
+                                                    <% } %>
+                                                
+                                                        <form action="/products/edit-product" method="post"
+                                                            accept-charset="utf-8">
+                                                            <input type="hidden" name ="csrf-token" value="<%= csrfToken %>">
+                                                            <div class="row mb-3">
+                                                                <div class="col-md-6">
+                                                                    <div class="form-floating mb-3 mb-md-0">
+                                                                        <input class="form-control"
+                                                                            value="<%= productData ? productData.title : ''  %>"
+                                                                            name="title" id="title" type="text"
+                                                                            placeholder="Enter your title" />
+                                                                        <label for="title">Title</label>
+                                                                        <% if (errors && errors.title) { %>
+                                                                            <span style="color: red;"><%= errors.title.msg %></span>
+                                                                        <% } %>
+                                                                
+                                                                    </div>
+                                                                </div>
+                                                               
+                                                            </div>
+                                                            <div class="form-floating mb-3">
+                                                                <input class="form-control" name="product_price"
+                                                                    value="<%= productData ? productData.product_price : ''  %>"
+                                                                    id="product_price" type="number"
+                                                                    placeholder="Price" />
+                                                                <label for="product_price">Product Price</label>
+                                                                <% if (errors && errors.product_price) { %>
+                                                                    <span style="color: red;"><%= errors.product_price.msg %></span>
+                                                                <% } %>
+                                                            </div>
+
+                                                            <div class="row mb-3">
+                                                                <div class="col-md-6">
+                                                                    <div class="form-floating mb-3 mb-md-0">
+                                                                        <input class="form-control" name="product_number"
+                                                                            value="<%= productData ? productData.product_number : ''  %>"
+                                                                            id="product_number" type="number"
+                                                                            placeholder="Update a number" />
+                                                                        <label for="product_number">Product number</label>
+                                                                        <% if (errors && errors.product_number) { %>
+                                                                            <span style="color: red;"><%= errors.product_number.msg %></span>
+                                                                        <% } %>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <div class="form-floating mb-3 mb-md-0">
+                                                                        <textarea class="form-control"
+                                                                            name="description" id="description"
+                                                                            type="text"
+                                                                            placeholder="Description" /><%= productData.description %></textarea>
+                                                                        <label for="description">Description</label>
+                                                                            <% if (errors && errors.description) { %>
+                                                                                <span style="color: red;"><%= errors.description.msg %></span>
+                                                                            <% } %>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <input type="hidden" name="productId" value="<%= productData.id %>">
+                                                            <div class="col-md-12 mt-4 mb-0 text-center">
+                                                                <div class="d-grid"><button type="submit"
+                                                                        class="btn btn-primary btn-block">Update
+                                                                        product</button></div>
+                                                            </div>
+                                                        </form>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </main>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            // Handle file input change
+            $('#productImage').on('change', function (e) {
+                // Get the selected file
+                let formData = new FormData();
+                let file = e.target.files[0];
+                let productId =  '<%= productData.id %>';
+                let url = '/products/upload-product-image';
+
+                if (file) {
+                    formData.append('product_image', file);
+                    formData.append('productId', productId);
+                     // Send the file via AJAX
+                     systemImageUpdate(formData, url);
+                }
+            });
+        });
+
+    </script>

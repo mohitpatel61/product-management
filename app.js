@@ -1,73 +1,135 @@
-const express = require('express');
-const expressLayouts = require('express-ejs-layouts');
-const http = require('http');
-const path = require('path');
+const express = require("express");
+const expressLayouts = require("express-ejs-layouts");
+const http = require("http");
+const path = require("path");
 const session = require("express-session");
-const flash = require('connect-flash');
+const flash = require("connect-flash");
+const cookieParser = require("cookie-parser");
+const bodyParser = require("body-parser");
+const MySQLStore = require("express-mysql-session")(session);
+const csrfService = require("./services/csrfService");
 const indexRouter = require("./routes/index");
-const csrfService = require('./services/csrfService'); // Import the CSRF service
-const cookieParser = require('cookie-parser');
-const bodyParser = require('body-parser');
+const { isAuthenticated } = require("./middlewares/checkAuthLogin");
 
-const App = express();
-const server = http.createServer(App);
-const sessionSecret = process.env.SESSION_SECRET || 'default_secret';
+require("dotenv").config(); // Load environment variables
+
+// Load configuration
+const config = require("./config/config.json");
+const environment = process.env.NODE_ENV || "development";
+const configForEnv = config[environment];
+
+if (!configForEnv) {
+    console.error(`Configuration for environment "${environment}" is missing!`);
+    process.exit(1);
+}
+
+// Destructure necessary configurations
+const { username, password, database, host, session: sessionConfig } = configForEnv;
+
+// MySQL Session Store Configuration
+const sessionStore = new MySQLStore({
+    host,
+    user: username,
+    password,
+    database,
+    clearExpired: true,
+    checkExpirationInterval: 900000, // Check expired sessions every 15 minutes
+    expiration: sessionConfig.cookie_max_age, // 1 day session expiration
+});
+
+// Initialize express app
+const app = express();
+const server = http.createServer(app);
 
 // Middleware Setup
-App.use(express.json());
-App.use(bodyParser.json());
-App.use(bodyParser.urlencoded({ extended: true }));
-App.use(cookieParser());
-App.use(express.static(path.join(__dirname, 'public')));
-App.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.json());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, "public")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Session Middleware (Set before CSRF)
-App.use(
+// 🛠️ **Session Middleware (Updated)**
+app.use(
     session({
-        secret: sessionSecret,
-        resave: false,
-        saveUninitialized: true,
-        cookie: { secure: false } // Set to true in production with HTTPS
+        name: "user_sid",
+        secret: process.env.SESSION_SECRET || sessionConfig.secret, // Encryption key for cookies
+        store: sessionStore, // Store sessions in MySQL
+        resave: false, // Prevent unnecessary session saving
+        saveUninitialized: false, // Important for flash messages to work
+        cookie: {
+            secure: process.env.NODE_ENV === "production", // Secure only in production
+            httpOnly: true, // Prevents JS from accessing cookies
+            maxAge: sessionConfig.cookie_max_age, // Cookie expiration
+        },
     })
 );
 
+// 🛠️ **Flash Messages Middleware (Placed Immediately After Session)**
+app.use(flash());
 
-App.use(flash());
-App.use((req, res, next) => {
+// 🔍 **Flash Debugging Middleware (Check If Flash Works)**
+// app.use((req, res, next) => {
+//     console.log("Success Flash Message:", req.flash("success"));
+//     console.log("Error Flash Message:", req.flash("error"));
+//     next();
+// });
+
+// 🛠️ **Auth Middleware to Protect Routes**
+app.use((req, res, next) => {
+    if (req.path === "/user/login" || req.path === "/user/auth/google" || req.path === "/user/auth/google/callback" || req.path === "/user/logout") {
+        return next();
+    }
+    isAuthenticated(req, res, next);
+});
+
+// 🛠️ **Flash Messages Available in Views**
+app.use((req, res, next) => {
     res.locals.success = req.flash("success");
     res.locals.error = req.flash("error");
     next();
 });
-// Set CSRF Token Middleware (Before rendering views)
-App.use((req, res, next) => {
+
+// 🛠️ **CSRF Token Middleware**
+app.use((req, res, next) => {
     try {
-        const csrfToken = csrfService.generateToken(req); // Generate per request
-        res.locals.csrfToken = csrfToken; // Pass CSRF token to views
+        const csrfToken = csrfService.generateToken(req);
+        res.locals.csrfToken = csrfToken;
     } catch (error) {
         console.error("CSRF Token Generation Error:", error);
     }
     next();
 });
 
-// EJS and Layouts Setup
-App.set('view engine', 'ejs');
-App.use(expressLayouts);
-App.set('views', './views');
+// 🛠️ **EJS and Layouts Setup**
+app.set("view engine", "ejs");
+app.use(expressLayouts);
+app.set("views", "./views");
 
-App.use((req, res, next) => {
-    res.locals.layout = req.path.startsWith('/user/login') ? 'loginLayout' : 'layout';
+// 🛠️ **Set Layout Dynamically**
+app.use((req, res, next) => {
+    res.locals.layout = req.path.startsWith("/user/login") ? "loginLayout" : "layout";
     next();
 });
 
-// Define Routes
-App.use("/", indexRouter);
-
-// Handle 404 Errors
-App.use((req, res) => {
-    res.status(404).render('404', { title: 'Page Not Found', layout: 'loginLayout' });
+// 🛠️ **Make User Session Data Available Globally in Views**
+app.use((req, res, next) => {
+    if (req.session.user) {
+        res.locals.user = req.session.user; // Making user data available globally
+    }
+    next();
 });
 
+// 🛠️ **Define Routes**
+app.use("/", indexRouter);
+
+// 🛠️ **Handle 404 Errors**
+app.use((req, res) => {
+    res.status(404).render("404", { title: "Page Not Found", layout: "loginLayout" });
+});
+
+// 🛠️ **Start Server**
 const PORT = process.env.PORT || 2100;
 server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
 });

@@ -5,11 +5,14 @@
     <div class="d-flex justify-content-between align-items-center mt-4">
         <h1>Dashboard</h1>
         <div class="user-info text-end">
-            <h4 class="mb-1">Welcome, <strong><%= user.name %></strong></h4>
 
+            <% if (locals.user) { %>  <!-- Use 'locals.user' -->
+                <h4 class="mb-1">Welcome, <strong><%= locals.user.name %></strong></h4>
+            <% } else { %>
+                <h4 class="mb-1">Welcome, Guest</h4>
+            <% } %>
         </div>
     </div>
-
 
     <!-- Optional: Charts and Additional Stats -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>

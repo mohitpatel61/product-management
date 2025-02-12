@@ -1,0 +1,9 @@
+
+
+{
+  "watch": ["app.js", "routes/", "views/", "services/", "controllers/"],
+  "ext": "js,ejs,html,json",
+  "ignore": ["node_modules/", "public/", "sessions/", "uploads/"],
+  "exec": "node app.js",
+  "delay": "1000"
+}

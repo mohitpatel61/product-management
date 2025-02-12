@@ -1,0 +1,33 @@
+<%- contentFor('body') %>
+
+    <div class="container-fluid px-4">
+        <h1 class="mt-4">Users</h1>
+        <ol class="breadcrumb mb-4">
+            <li class="breadcrumb-item active">Users</li>
+        </ol>
+        <a class="btn btn-primary btn-block" href="/users/add-user">Create user</a>
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-table me-1"></i>
+                User list
+            </div>
+            <div class="card-body">
+                <table id="users-table">
+                    <thead>
+                        <tr>
+                            <th>Created At</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+                <script src="/js/datatable-config.js"></script>
+                <script src="/js/users/user.js"></script>
+             </div>
+        </div>
+    </div>

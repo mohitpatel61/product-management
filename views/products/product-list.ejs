@@ -1,0 +1,36 @@
+<%- contentFor('body') %>
+
+    <div class="container-fluid px-4">
+        <h1 class="mt-4">Products</h1>
+        <ol class="breadcrumb mb-4">
+            <li class="breadcrumb-item active">Products</li>
+        </ol>
+        <a class="btn btn-primary btn-block" href="/products/add-product">Create product</a>
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-table me-1"></i>
+                User list
+            </div>
+            <div class="card-body">
+                <table id="products-table">
+                    <thead>
+                        <tr>
+                            <th>Created At</th>
+                            <th>Created By</th>
+                            <th>Title</th>
+                            <th>Price</th>
+                            <th>Model Number</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+               
+             </div>
+        </div>
+    </div>
+    <script src="/js/datatable-config.js"></script>
+    <script src="/js/products/product.js"></script>

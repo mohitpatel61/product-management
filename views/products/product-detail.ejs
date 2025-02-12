@@ -1,0 +1,101 @@
+<%- contentFor('body') %>
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Product Detail</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item active">Product Detail</li>
+    </ol>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-box me-1"></i>
+            Product Detail
+        </div>
+        <div class="card-body">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card shadow-lg border-0 rounded-lg mt-4">
+                        <div class="card-header text-center">
+                            <h3 class="font-weight-light my-3">Product Information</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                               <!-- Product Picture Section -->
+                               <div class="col-md-4 text-center">
+                                    <div class="mb-4 position-relative">
+                                        <!-- Display the current profile image or the default image -->
+                                        <img id="fileData"
+                                            src="<%= productDetails && productDetails.thumbnail_image ? productDetails.thumbnail_image : '/assets/img/no-image.png' %>"
+                                            alt="Profile Picture" class="img-thumbnail rounded-circle"
+                                            style="width: 150px; height: 150px; object-fit: cover;">
+
+                                        <!-- Pencil icon for editing profile picture, positioned over the image -->
+                                        <label for="productImage" class="position-absolute"
+                                            style="bottom: -15px; right: 190px; cursor: pointer; z-index: 999;">
+                                            <i class="fa fa-pencil"
+                                                style="font-size: 24px; color: #fff; background-color: rgba(0, 0, 0, 0.6); border-radius: 50%; padding: 5px;"></i>
+                                        </label>
+                                    </div>
+                                    <div class="form-group">
+                                        <input type="file" class="form-control" id="productImage"
+                                            name="product_image" accept="image/*" style="display: none;">
+                                    </div>
+                                </div>
+
+                                <div class="col-md-8">
+                                    <table class="table table-bordered">
+                                        <tbody>
+                                            <tr>
+                                                <th>Title:</th>
+                                                <td><%= productDetails.title %></td>
+                                            </tr>
+                                            <tr>
+                                                <th>Price:</th>
+                                                <td>&#8377; <%= productDetails.product_price %></td>
+                                            </tr>
+                                            <tr>
+                                                <th>Code:</th>
+                                                <td><%= productDetails.product_number %></td>
+                                            </tr>
+                                            <tr>
+                                                <th>Description:</th>
+                                                <td><%= productDetails.description %></td>
+                                            </tr>
+                                            <tr>
+                                                <th>created by:</th>
+                                                <td><%= `${productDetails.user.first_name} ${productDetails.user.last_name}` %></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer text-center">
+                            <a href="/products" class="btn btn-primary">Back to Products</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // Handle file input change
+        $('#productImage').on('change', function (e) {
+            // Get the selected file
+            let formData = new FormData();
+            let file = e.target.files[0];
+            let productId =  '<%= productDetails.id %>';
+            let url = '/products/upload-product-image';
+
+            if (file) {
+                formData.append('product_image', file);
+                formData.append('productId', productId);
+                 // Send the file via AJAX
+                 systemImageUpdate(formData, url);
+            }
+        });
+    });
+
+</script>

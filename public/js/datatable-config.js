@@ -2,9 +2,13 @@ function initializeDataTable(selector, ajaxUrl, columns, order = "", searchData 
     return $(selector).DataTable({
         processing: true,   // Show processing indicator
         serverSide: true,   // Enable server-side processing
+        
         ajax: {
             url: ajaxUrl,    // URL for the AJAX request
             type: 'POST',    // Method type
+            headers: {
+                'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content') // Include CSRF token
+            },
             data: function (d) {
                 // Add additional parameters (like search, sorting, filters) to the request
                 d.searchData = searchData; // Pass searchData to the server
@@ -19,8 +23,8 @@ function initializeDataTable(selector, ajaxUrl, columns, order = "", searchData 
         responsive: true,
 
         order: order,
-        dom: options, // Position of buttons (B for Buttons, f for filter, r for processing)
-        buttons: buttons,
+        // dom: options, // Position of buttons (B for Buttons, f for filter, r for processing)
+        // buttons: buttons,
         language: {
             emptyTable: 'No data available',
             processing: 'Loading...',

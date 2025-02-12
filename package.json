@@ -6,20 +6,27 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",
     "dev": "nodemon -w public -w views -w models -w routes -w controllers -w ../db -e js,ejs,html,json app.js"
-
+  },
+  "bin": {
+    "<npm-username>/generator": "bin/generator",
+    "generator": "bin/generator"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "connect-flash": "^0.1.1",
+    "connect-session-sequelize": "^7.1.7",
     "cookie-parser": "^1.4.7",
     "csrf": "^3.1.0",
+    "dotenv": "^16.4.7",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
     "express-ejs-layouts": "^2.5.1",
+    "express-mysql-session": "^3.0.3",
     "express-session": "^1.18.1",
     "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
@@ -28,6 +35,7 @@
     "mysql2": "^3.12.0",
     "sequelize": "^6.37.5",
     "sequelize-cli": "^6.6.2",
+    "sharp": "^0.33.5",
     "winston": "^3.17.0",
     "xlsx": "^0.18.5"
   },

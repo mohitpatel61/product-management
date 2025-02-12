@@ -4,20 +4,35 @@
     "password": "root",
     "database": "product_management",
     "host": "127.0.0.1",
-    "dialect": "mysql"
+    "dialect": "mysql",
+    "session": {
+      "secret": "your_secret_key",
+      "cookie_max_age": 86400000,
+      "secure_cookie": false
+    }
   },
   "test": {
     "username": "root",
     "password": null,
     "database": "database_test",
     "host": "127.0.0.1",
-    "dialect": "mysql"
+    "dialect": "mysql",
+    "session": {
+      "secret": "your_secret_key",
+      "cookie_max_age": 86400000,
+      "secure_cookie": false
+    }
   },
   "production": {
     "username": "root",
     "password": null,
     "database": "database_production",
     "host": "127.0.0.1",
-    "dialect": "mysql"
+    "dialect": "mysql",
+    "session": {
+      "secret": "your_production_secret_key",
+      "cookie_max_age": 86400000,
+      "secure_cookie": true
+    }
   }
 }
