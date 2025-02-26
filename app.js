@@ -9,14 +9,27 @@ const bodyParser = require("body-parser");
 const mysql = require("mysql2"); // Use mysql2
 const MySQLStore = require("express-mysql-session")(session);
 const dbConnection = require("./config/db");
+const apiRoutes = require("./routes/APIroutes/index");
 
 const csrfService = require("./services/csrfService");
 const indexRouter = require("./routes/index");
 const { isAuthenticated } = require("./middlewares/checkAuthLogin");
+const cors = require("cors");
 
 require("dotenv").config(); // Load environment variables
 const app = express()
 
+//ALLOW for ALl REQS
+// app.use(cors());
+
+// Restricted purpose
+app.use(
+    cors({
+      origin: "http://localhost:3001", // Allow only this frontend to access the API
+     
+      credentials: true, // Allow cookies if needed
+    })
+  );
 // ✅ Use MySQL connection for session store
 const sessionStore = new MySQLStore({}, dbConnection);
 
@@ -58,6 +71,8 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+app.use("/", apiRoutes);
+
 
 // 🛠️ **Flash Messages Middleware (Placed Immediately After Session)**
 app.use(flash());
@@ -78,6 +93,7 @@ app.use((req, res, next) => {
 // 🛠️ **Auth Middleware to Protect Routes**
 app.use((req, res, next) => {
     if (req.path === "/user/login" || req.path === "/user/auth/google" || req.path === "/user/auth/google/callback" || req.path === "/user/logout") {
+
         return next();
     }
     isAuthenticated(req, res, next);
@@ -116,7 +132,9 @@ app.use((req, res, next) => {
 });
 
 // 🛠️ **Define Routes**
+
 app.use("/", indexRouter);
+
 
 // 🛠️ **Handle 404 Errors**
 app.use((req, res) => {

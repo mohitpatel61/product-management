@@ -30,7 +30,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
       product_number: {
-        type: DataTypes.NUMBER,
+        type: DataTypes.STRING,
         allowNull: true,
       },
       deleted_at: {

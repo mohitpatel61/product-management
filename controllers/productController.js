@@ -144,7 +144,7 @@ module.exports = {
             .toFile(path.join(thumbnailFolder, imageName));
         }
 
-            const { title, product_price, product_number, description } = req.body;
+          const { title, product_price, product_number, description } = req.body;
           console.log("req.body -----------", req.body);
             // Check if product number already exists
             const checkProductNumber = await Product.findOne({
@@ -350,5 +350,202 @@ module.exports = {
       res.status(500).json({ error: 'Failed to upload profile picture' });
     }
   },
+  //Get products from API REACT
+  getProducts: async(req,res) => {
+
+          // console.log(req.user);
+          const getProducts = await Product.findAll({
+            where: {created_by : req.user.id},
+            include: [
+              {
+                model: User,
+                as: 'user',
+                attributes: ['id','first_name','last_name']
+              }
+            ]
+          });
+
+          const products_data = getProducts.map((product) => ({
+            title: product.title,
+            id: product.id,
+            created_by: `${product.user.first_name} ${product.user.last_name}`,
+            thumbnail_image: product.thumbnail_image,
+            product_image: product.product_image,
+            product_price: product.product_price,
+            product_number: product.product_number,
+            created_at: new Date(product.created_at).toLocaleString(),
+            quantity: 0,
+          }))
+        
+          return res.status(200).json({ message: 'Products loaded successfully', products: products_data });
+  },
+
+  createProduct : async(req, res) => {
+    try {
+            const { productName, productPrice, productModal, productDescription } = req.body;
+           
+            // Check if product number already exists
+            const checkProductNumber = await Product.findOne({
+                where: { product_number: productModal }
+            });
+            if (checkProductNumber) {
+              return res.status(201).json({ message: `Product number ${productModal} already exists` });
+            }
+           
+
+            // Save the product data
+            await Product.create({
+                title : productName,
+                product_number : productModal,
+                product_price : productPrice,
+                description : productDescription,
+                created_by: req.user.id,
+           });
+         
+
+           return res.status(200).json({ status:200, message: `Product number ${productModal} is added` });
+  }
+  catch(err){
+    return res.status().json({ message:  err.message });
+  }
+},
+
+productDetails : async (req, res) => {
+  try {
+      console.log("jjjjjjjjjjjjjjjjjj")
+      const productDetails = await Product.findOne({
+        where: {id: req.params.id},
+        include :[
+          {
+            model: User,
+            as: "user",
+            attributes: ['id','first_name', 'last_name']
+          }
+        ]
+      });
+      
+      if(!productDetails){
+        req.flash("error", "Product not found");
+        return res.status(401).json({message: "Product not found", status: 401});
+      }
+      return res.status(200).json({ status: 200, message: "Product details loaded successfully", productDetails:productDetails });
+
+  } catch (error) {
+    return res.status(400).json({status: 400, message: err.message});
+  }
+},
+
+removeProduct: async (req, res) => {
+  try {
+ 
+    const productId = req.params.id;
+    const productData = await Product.findOne({
+      where: {id : productId}
+     });
+     
+    if(!productData){
+      return res.status(404).json({status:404, message: "Product not found"});
+     }
+
+     await productData.destroy();
+     return res.status(200).json({
+       status: 200,
+       message: 'Product marked as deleted successfully',
+     });
+  } catch (error) {
+    return res.status(404).json({
+      status: 404,
+      message: error.message,
+    });
+  }
+},
+
+updateProductImage : async(req, res) => {
+  try {
+
+    const productId = req.body.product_id; // Get the user ID from the session or JWT token
+    const file = req.file; // Assuming you're using multer
+   
+    if (!file) {
+      return res.status(400).send('No file uploaded');
+    }
+
+    // Generate a new filename using current timestamp (or you can use UUID or any other strategy)
+    const imageName = moment().valueOf() + path.extname(file.originalname).toLowerCase();
+    const imagePath = `/uploads/products/${imageName}`; // This is the path to store in the database
+    const thumbnailPath = `/uploads/products/thumbnails/${imageName}`;
+
+    // Update the user's profile image in the database
+    const product = await Product.findOne({ where: { id: productId } });
+    if (!product) {
+      return res.status(404).json({ error: 'product not found' });
+    }
+   
+     // If the user already has a profile image, delete the old one
+     if (product.product_image) {
+      const oldImagePath = path.join(__dirname, '..', product.product_image); // Construct the full path
+      const oldThumbnailPath = path.join(__dirname, '..', product.thumbnail_image);
+      
+      if (fs.existsSync(oldImagePath))
+        { 
+        fs.unlinkSync(oldImagePath);
+        } // Delete the old image file
+      if (fs.existsSync(oldThumbnailPath)) { 
+        fs.unlinkSync(oldThumbnailPath);
+        }
+    }
+
+    fs.renameSync(file.path, path.join(imageUploadFolder, imageName));
+    // Generate a thumbnail
+    await sharp(path.join(imageUploadFolder, imageName))
+      .resize(150, 150) // Resize to 150x150 pixels
+      .toFile(path.join(thumbnailFolder, imageName));
+
+
+    // Update the user's profile image field
+    product.product_image = imagePath;
+    product.thumbnail_image = thumbnailPath;
+    await product.save();
+    // Respond with success message
+   
+    return res.status(200).json({status: 200, message: 'Product image uploaded successfully', productImage: imagePath, thumbnailImage: thumbnailPath });
+  } catch (error) {
+    console.log('Error uploading profile picture:', error);
+    return res.status(500).json({ error: 'Failed to upload profile picture' });
+  }
+},
+
+updateProductDetail: async(req, res) => {
+  try {
+   
+    const {productId, productName, productModal, productPrice, productDescription, } =  req.body;
+    const productDetail = await Product.findOne({
+      where: {id:productId}
+    });
+
+    if(!productDetail){
+      return res.status(404).json({status: 404, message: "product not found"});
+    }
+
+    const checkModal =  await Product.findOne({
+        where: {id :  { [Op.not]: productId }, product_number : productModal}
+    });
+
+    if(checkModal){
+      return res.status(201).json({status:201 , message:`Product number ${productModal} is already exists` });
+    }
+
+    productDetail.title = productName;
+    productDetail.product_price = productPrice;
+    productDetail.product_number = productModal;
+    productDetail.description = productDescription;
+    productDetail.save();
+
+    return res.status(200).json({status:200, message:"Product has been updated successfully......"})
+
+  } catch (error) {
+    
+  }
+}
 
 };

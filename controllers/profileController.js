@@ -8,6 +8,7 @@ const path = require('path');  // Add this line to import the 'path' module
 const csrfService = require("../services/csrfService");
 const imageUploadFolder = path.join(__dirname, '..', 'uploads', 'profile_pics');
 const thumbnailFolder = path.join(imageUploadFolder, 'thumbnails');
+const bcrypt = require("bcrypt");
 
 module.exports = {
 
@@ -142,4 +143,142 @@ module.exports = {
       return res.redirect('/profile/user-profile');
     }
   },
+
+
+  // API call
+  getUserProfileData: async (req, res) => {
+    try {
+      const empDetail = await User.findOne({
+        where: { id: req.user.id },
+        attributes: ['id', 'first_name', 'last_name', 'email', 'status', 'profile_image', 'thumbnail_image']
+      });
+      return res.status(200).json({ message: 'Profile loaded successfully', userData: empDetail });
+    } catch (error) {
+      return res.status(error.status).json({ message: error.message });
+    }
+  },
+
+  updateProfile : async(req, res) => {
+    try {
+      // console.log(req.body);return false;
+      const { first_name, last_name, email } = req.body;
+      const getUserData =  await User.findOne({
+        where: { id: req.user.id }
+      });
+
+      // Check if the employee email already exists
+      const checkEmpEmail = async (email) => {
+        return await User.findOne({
+          where: {
+            email: email, id: { [Op.not]: req.user.id },
+          }
+        });
+      };
+
+      const emailCheck = await checkEmpEmail(email);
+      if (emailCheck) {
+        return res.status(201).json({ status:201, message: `This email ${email} already exists.`});
+      }
+
+      // update the profile
+     
+      if (getUserData) {
+        getUserData.first_name = first_name;
+        getUserData.last_name = last_name;
+        getUserData.email = email;
+
+        await getUserData.save();
+      }
+
+      return res.status(200).json({message : 'Profile is updated ', status : 200});
+    } catch (error) {
+      return res.status(201).json({message : error.message})
+    }
+  },
+ 
+  updateUserProfilePic : async(req, res) => {
+    try {
+
+      const file = req.file; // Assuming you're using multer
+      if (!file) {
+        return res.status(400).json({message :'No file uploaded'});
+      }
+
+      const imageName = moment().valueOf() + path.extname(file.originalname).toLowerCase();
+      const imagePath = `/uploads/profile_pics/${imageName}`; // This is the path to store in the database
+      const thumbnailPath = `/uploads/profile_pics/thumbnails/${imageName}`;
+
+
+      // Update the user's profile image in the database
+      const user = await User.findOne({ where: { id: req.user.id } });
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+       // If the user already has a profile image, delete the old one
+       if (user.profile_image) {
+        const oldImagePath = path.join(__dirname, '..', user.profile_image); // Construct the full path
+        const oldThumbnailPath = path.join(__dirname, '..', user.thumbnail_image);
+
+        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath); // Delete the old image file
+        if (fs.existsSync(oldThumbnailPath)) fs.unlinkSync(oldThumbnailPath);
+      }
+
+      fs.renameSync(file.path, path.join(imageUploadFolder, imageName));
+      // Generate a thumbnail
+      await sharp(path.join(imageUploadFolder, imageName))
+        .resize(150, 150) // Resize to 150x150 pixels
+        .toFile(path.join(thumbnailFolder, imageName));
+
+
+      // Update the user's profile image field
+      user.profile_image = imagePath;
+      user.thumbnail_image = thumbnailPath;
+      await user.save();
+  
+      // Respond with success message
+     
+      res.status(200).json({ message: 'Profile picture uploaded successfully', status: 200, profile_image: imagePath, thumbnail_image: thumbnailPath });
+    } catch (error) {
+      return req.status(201).json({status : 201, message: error.message});
+    }
+   
+  },
+
+  changePassword : async(req, res) => {
+    try{
+     
+      const {currentPassword, newPassword, confirmPassword} = req.body;
+      
+      // 🔹 Ensure all fields are provided
+      if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: "All fields are required", status: 400 });
+      }
+
+      const getUserData = await User.findOne({
+        where: {id: req.user.id}
+      });
+
+      if(currentPassword != req.user.password){
+        return res.json({message : 'Please enter correct old password ', status : 401});
+      }
+
+      if(newPassword !== confirmPassword){
+        return res.json({message : 'Password and confirm password is not matched', status : 401});
+      }
+     
+      if(!getUserData){
+        return res.status(404).json({message : 'User Not found ', status : 404});
+      }
+     const hashedPass = await bcrypt.hash(newPassword, 10);
+      getUserData.password = hashedPass;
+      getUserData.save();
+
+      return res.status(200).json({message : 'Your password has been updated ', status : 200});
+      
+    }catch(error){
+      return res.status(201).json({message : error.message})
+    }
+  }
+
 };

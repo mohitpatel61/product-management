@@ -9,6 +9,8 @@ const imageUploadFolder = path.join(__dirname, '..', 'uploads', 'profile_pics');
 const thumbnailFolder = path.join(imageUploadFolder, 'thumbnails');
 const moment = require("moment");
 const sharp = require("sharp");
+const jwt = require("jsonwebtoken");
+
 
 module.exports = {
   getLoginView: async (req, res) => {
@@ -181,6 +183,37 @@ module.exports = {
     } catch (error) {
       console.error('Error:', error);
       res.redirect('/login');
+    }
+  },
+
+  // Login with API
+  loginWithAPI: async (req, res, next) => {
+    try {
+  
+      // Validate input fields
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.render("login", {
+          title: "Login",
+          errorMessages: errors.array().map((error) => error.msg),
+          userData: req.body,
+        });
+      }
+
+// console.log(req.body);return false;
+      const { email, password } = req.body;
+      const userInfo = await User.findOne({ where: { email } });
+
+      if (!userInfo || !(await bcrypt.compare(password, userInfo.password))) {
+        return res.status(404).json({ status: false, message: "Login failed"});
+      }
+      const token = jwt.sign({ id: userInfo.id, email: userInfo.email, password:password  }, process.env.JWT_SECRET, { expiresIn: "1d" });
+
+      // Regenerate session to prevent session fixation attacks
+      return res.status(200).json({ status: true, message: "Login success" , 'token' : token, userInfo: userInfo});
+    } catch (error) {
+      console.error("Login error:", error);
+      return redirectWithError(req, res, "Failed to login. Please try again.");
     }
   }
 };
