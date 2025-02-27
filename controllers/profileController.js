@@ -259,7 +259,7 @@ module.exports = {
         where: {id: req.user.id}
       });
 
-      if(currentPassword != req.user.password){
+      if(!await bcrypt.compare(currentPassword, getUserData.password)){
         return res.json({message : 'Please enter correct old password ', status : 401});
       }
 
@@ -270,7 +270,7 @@ module.exports = {
       if(!getUserData){
         return res.status(404).json({message : 'User Not found ', status : 404});
       }
-     const hashedPass = await bcrypt.hash(newPassword, 10);
+      const hashedPass = await bcrypt.hash(newPassword, 10);
       getUserData.password = hashedPass;
       getUserData.save();
 
